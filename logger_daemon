@@ -1,0 +1,41 @@
+#!/bin/bash
+
+
+# settings
+STATION_ID="2135"
+DB_FILE="db/temp.db"
+SLEEPTIME="5m"
+
+# database (path & query-function)
+REAL_DB_FILE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/$DB_FILE"
+function query_db {
+	sqlite3 -batch $REAL_DB_FILE "$1"
+}
+
+# main loop
+while true; do
+	# read XML and get values
+	
+	XML=$(curl -s http://www.hydrodaten.admin.ch/de/$STATION_ID.xml)
+	TEMP=$(echo $XML | xpath -q -e 'string(//station/actualData/MesPar[@Typ=03]/Wert)' 2>/dev/null)
+	TIME=$(echo $XML | xpath -q -e 'string(//station/actualData/MesPar[@Typ=03]/Zeit)' 2>/dev/null)
+	DATE=$(echo $XML | xpath -q -e 'string(//station/actualData/MesPar[@Typ=03]/Datum)' 2>/dev/null)
+	
+	# get unix-timestamp
+	D_DAY=$(echo $DATE | cut -d"." -f1)
+	D_MONTH=$(echo $DATE | cut -d"." -f2)
+	D_YEAR=$(echo $DATE | cut -d"." -f3)
+	TS=$(date +%s -d "$D_YEAR/$D_MONTH/$D_DAY $TIME")
+
+	# check for a valid timestamp, if not, write result to database
+	CHK=$(query_db "SELECT id,timestamp FROM templog WHERE TIMESTAMP='$TS'");
+	if [ -z "$CHK" ]; then
+		query_db "INSERT INTO templog VALUES (NULL,$STATION_ID,'$TS',$TEMP)"
+		LD=$(date +"%m.%d.%y %T")
+		echo -e "$LD\t$STATION_ID\t$TEMP\t$TS"
+	fi;
+	
+	# sleep for defined time
+	sleep $SLEEPTIME
+	
+done;

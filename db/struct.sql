@@ -1,0 +1,4 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE [templog] ([id] INTEGER PRIMARY KEY AUTOINCREMENT, [station_id] INT (4), [timestamp] VARCHAR (255), [value] VARCHAR (255));
+COMMIT;

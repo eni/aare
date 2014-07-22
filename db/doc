@@ -1,0 +1,16 @@
+# export
+sqlite3 db/temp.db .dump > db/struct.sql 
+
+# import
+cat db/struct.sql | sqlite3db/temp.db
+
+
+
+==================================
+table: templog
+----------------------------------
+id			integer [ai pirmary]
+statiom_id	int(4)
+timestamp	varchar(255)
+value		varchar(255)
+==================================
